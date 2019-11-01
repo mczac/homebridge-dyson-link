@@ -14,12 +14,12 @@ class DysonEnvironmentState {
 
         // Gets the highest value, which means the one with the baddest results
         this._airQuality = Math.max(
-            this.getCharacteristicValue(newState.data.pm25), 
+            this.getCharacteristicValue(newState.data.pm25),
             this.getCharacteristicValue(newState.data.pm10),
             this.getCharacteristicValue(newState.data.va10),
             this.getCharacteristicValue(newState.data.noxl),
             p, v);
-        
+
         this._humidity = Number.parseInt(newState.data.hact);
         // Reference: http://aakira.hatenablog.com/entry/2016/08/12/012654
         this._temperature = Number.parseFloat(newState.data.tact) / 10 - 273;
@@ -37,8 +37,8 @@ class DysonEnvironmentState {
     getCharacteristicValue(rawValue) {
 
         // Converts the raw value into an integer (if no value is provided, 0 is returned, so that the overall result is not changed)
-        if (!rawValue) {
-            return 0;
+        if (!rawValue || rawValue == "INIT" || rawValue == "OFF") {
+            return 0; // Characteristic.AirQuality.UNKNOWN
         }
         let integerValue = Number.parseInt(rawValue);
 
@@ -46,7 +46,10 @@ class DysonEnvironmentState {
         integerValue = Math.floor(integerValue / 10);
 
         // Returns the characteristic value based on the bucket in which the value should go (as seen in the Dyson app)
-        if (integerValue <= 3) {
+        if (integerValue <= 2) {
+            return 1; // Characteristic.AirQuality.EXCELLENT
+        }
+        if (integerValue <= 4) {
             return 2; // Characteristic.AirQuality.GOOD
         }
         if (integerValue <= 6) {

@@ -85,13 +85,13 @@ class DysonLinkDevice {
 
 
     requestForCurrentUpdate() {
-        // Only do this when we have less than one listener to avoid multiple call 
+        // Only do this when we have less than one listener to avoid multiple call
         // OR when there are too many listeners (that might suggest that the previous calls were lost for some reason)
-        let senorlistenerCount = this.environmentEvent.listenerCount(this.SENSOR_EVENT);
+        let sensorlistenerCount = this.environmentEvent.listenerCount(this.SENSOR_EVENT);
         let fanlistenerCount = this.mqttEvent.listenerCount(this.STATE_EVENT);
-        this.log.debug("Number of listeners - sensor:"+ senorlistenerCount + " fan:" + fanlistenerCount);
-        let tooManyListener = senorlistenerCount > 4 || fanlistenerCount >10;
-        if((senorlistenerCount <=1 && fanlistenerCount <=1) || tooManyListener) {
+        this.log.debug("Number of listeners - sensor:"+ sensorlistenerCount + " fan:" + fanlistenerCount);
+        let tooManyListener = sensorlistenerCount > 4 || fanlistenerCount >10;
+        if((sensorlistenerCount <=1 && fanlistenerCount <=1) || tooManyListener) {
             this.log("Request for current state update");
             if (tooManyListener) {
                 this.log("Too many listerner. Do another publish now");
@@ -314,6 +314,24 @@ class DysonLinkDevice {
         }
     }
 
+    setMonitoringMode(value, callback) {
+        this.setState({ rhtm: value ? "ON" : "OFF" });
+        this.isMonitoringMode(callback);
+    }
+
+    isMonitoringMode(callback) {
+        if(this.mqttClient.connected){
+            this.mqttEvent.once(this.STATE_EVENT, () => {
+                this.log.info(this.displayName + " - Monitoring Mode: " + this.fanState.monitoringMode);
+                callback(null, this.fanState.monitoringMode);
+            });
+            // Request for update
+            this.requestForCurrentUpdate();
+        } else {
+            callback(null, 0);
+        }
+    }
+
     setFocusedJet(value, callback) {
         if(this.Is2018Dyson){
             this.setState({ fdir: value ? "ON" : "OFF" });
@@ -490,7 +508,7 @@ class DysonLinkDevice {
     }
 
     getTemperture(callback) {
-        
+
         this.log.debug(this.displayName + " Get temperture");
         if (this.notUpdatedRecently()) {
             if(this.mqttClient.connected){

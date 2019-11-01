@@ -12,7 +12,7 @@ function setHomebridge(homebridge) {
 }
 
 class DysonLinkAccessory {
-    constructor(displayName, device, accessory, log, nightModeVisible, focusModeVisible, autoModeVisible) {
+    constructor(displayName, device, accessory, log, nightModeVisible, focusModeVisible, autoModeVisible, monitoringModeVisible) {
 
 
         this.device = device;
@@ -22,6 +22,7 @@ class DysonLinkAccessory {
         this.log = log;
         this.displayName = displayName;
 
+        this.monitoringModeVisible = monitoringModeVisible;
         this.nightModeVisible = nightModeVisible;
         this.focusModeVisible = focusModeVisible;
         this.autoModeVisible = autoModeVisible;
@@ -31,8 +32,8 @@ class DysonLinkAccessory {
     }
 
     // updateFanState() {
-    //     this.fan.getCharacteristic(Characteristic.On).updateValue(this.device.fanState.fanOn);        
-    //     this.autoSwitch.getCharacteristic(Characteristic.On).updateValue(this.device.fanState.fanAuto);        
+    //     this.fan.getCharacteristic(Characteristic.On).updateValue(this.device.fanState.fanOn);
+    //     this.autoSwitch.getCharacteristic(Characteristic.On).updateValue(this.device.fanState.fanAuto);
 
     //     if (this.device.heatAvailable) {
     //         this.heatSwitch.getCharacteristic(Characteristic.On).updateValue(this.device.fanState.fanHeat);
@@ -73,6 +74,12 @@ class DysonLinkAccessory {
                 .on("get", this.device.getVOCDensity.bind(this.device));
             this.airSensor.getCharacteristic(Characteristic.NitrogenDioxideDensity)
                 .on("get", this.device.getNitrogenDioxideDensity.bind(this.device));
+
+                //VOLATILE
+                //DUST elements
+                //Expose blowing backward
+
+                // ADD TO INFO SERVICE
         }
 
         // Updates the accessory information
@@ -108,12 +115,12 @@ class DysonLinkAccessory {
             this.accessory.removeService(autoSwitch);
         }
 
-        this.fan = this.getService(Service.Fanv2); 
+        this.fan = this.getService(Service.Fanv2);
 
         this.fan.getCharacteristic(Characteristic.Active)
             .on("get", this.device.isFanOn.bind(this.device))
             .on("set", this.device.setFanOn.bind(this.device));
-            
+
         this.fan.getCharacteristic(Characteristic.SwingMode)
             .on("get", this.device.isRotate.bind(this.device))
             .on("set", this.device.setRotate.bind(this.device));
@@ -123,7 +130,7 @@ class DysonLinkAccessory {
         // Don't seem to be called by homekit at all
         // this.fan.getCharacteristic(Characteristic.CurrentFanState)
         //     .on("set", this.device.setCurrentFanState.bind(this.device))
-        //     .on("get", this.device.getCurrentFanState.bind(this.device));     
+        //     .on("get", this.device.getCurrentFanState.bind(this.device));
 
         // This is actually the fan speed instead of rotation speed but homekit fan does not support this
         this.fan.getCharacteristic(Characteristic.RotationSpeed)
@@ -131,7 +138,7 @@ class DysonLinkAccessory {
                 minStep: 10
             })
             .on("get", this.device.getFanSpeed.bind(this.device))
-            .on("set", this.device.setFanSpeed.bind(this.device));        
+            .on("set", this.device.setFanSpeed.bind(this.device));
 
         if(this.nightModeVisible) {
             this.log.info("Night mode button is added");
@@ -150,7 +157,24 @@ class DysonLinkAccessory {
             }
         }
 
-        // Create FilterMaintenance 
+        if(this.monitoringModeVisible) {
+            this.log.info("Monitoring mode button is added");
+            this.monitoringModeSwitch = this.getServiceBySubtype(Service.Switch, "Monitoring Mode - " + this.displayName, "Monitoring Mode");
+
+            this.monitoringModeSwitch
+                .getCharacteristic(Characteristic.On)
+                .on("get", this.device.isMonitoringMode.bind(this.device))
+                .on("set", this.device.setMonitoringMode.bind(this.device));
+        }
+        else {
+            this.log.info("Monitoring mode button is hidden");
+            let monitroingSwtich = this.accessory.getServiceByUUIDAndSubType(Service.Switch, "Monitoring Mode");
+            if(monitoringSwtich){
+                this.accessory.removeService(monitoringSwtich);
+            }
+        }
+
+        // Create FilterMaintenance
         this.filter = this.getService(Service.FilterMaintenance);
         this.filter.getCharacteristic(Characteristic.FilterChangeIndication)
             .on("get", this.device.getFilterChange.bind(this.device));
@@ -162,7 +186,7 @@ class DysonLinkAccessory {
         this.fan.getCharacteristic(Characteristic.FilterLifeLevel)
             .on("get", this.device.getFilterLife.bind(this.device));
 
-        // Set Heat 
+        // Set Heat
         if (this.device.heatAvailable) {
             this.log("Heat Available. Add Heat button and jet control");
             this.heater = this.getService(Service.HeaterCooler);
@@ -209,8 +233,8 @@ class DysonLinkAccessory {
             //     .on("set", this.device.setHeatOn.bind(this.device));
 
 
-            
-            
+
+
             // Set the auto/manual mode in the FanV2 just for Cool/Heat device as it seemed to be problem for cool device
             // Removed this for now as FanV2 is not working for this
             // this.fan.getCharacteristic(Characteristic.TargetFanState)
@@ -224,7 +248,7 @@ class DysonLinkAccessory {
             }
 
             this.autoSwitch = this.getServiceBySubtype(Service.Switch, "Auto - " + this.displayName, "Auto");
-            
+
             this.autoSwitch
                 .getCharacteristic(Characteristic.On)
                 .on("get", this.device.isFanAuto.bind(this.device))
@@ -245,7 +269,7 @@ class DysonLinkAccessory {
                     .on("get", this.device.isFanAuto.bind(this.device))
                     .on("set", this.device.setFanAuto.bind(this.device));
             }
-            
+
         }
 
         // Add jet focus for Cool/Heat and 2018 Cool device
@@ -254,7 +278,7 @@ class DysonLinkAccessory {
             if(this.focusModeVisible) {
                 this.log.info("Jet Focus mode button is added");
                 this.focusSwitch = this.getServiceBySubtype(Service.Switch, "Jet Focus - " + this.displayName, "Jet Focus");
-                
+
                 this.focusSwitch
                     .getCharacteristic(Characteristic.On)
                     .on("get", this.device.isFocusedJet.bind(this.device))
@@ -301,6 +325,15 @@ class DysonLinkAccessory {
     isNightModeSwitchOn(){
         if(this.nightModeSwitch) {
             return this.nightModeSwitch.getCharacteristic(Characteristic.On).value;
+        }
+        else {
+            return false;
+        }
+    }
+
+    isMonitoringModeSwitchOn(){
+        if(this.monitoringModeSwitch) {
+            return this.monitoringModeSwitch.getCharacteristic(Characteristic.On).value;
         }
         else {
             return false;

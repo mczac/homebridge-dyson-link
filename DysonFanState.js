@@ -1,10 +1,10 @@
 class DysonFanState {
- 
+
     constructor(heatAvailable, is2018Dyson) {
         this.heatAvailable = heatAvailable;
         this.is2018Dyson = is2018Dyson;
     }
- 
+
     getFieldValue(newState, field) {
         var state = newState["product-state"];
         if(state instanceof Object)
@@ -16,23 +16,24 @@ class DysonFanState {
             return newState[field];
         }
     }
- 
+
     updateState(newState) {
         this._fan = this.getFieldValue(newState, "fmod") === "FAN" ||
                     this.getFieldValue(newState, "fmod") === "AUTO" ||
                     this.getFieldValue(newState, "fpwr") === "ON" ;
- 
+
         this._auto = this.getFieldValue(newState, "fmod") === "AUTO" ||
                     (this.getFieldValue(newState, "auto") === "ON" && this._fan);
- 
+
         this._rotate = this.getFieldValue(newState, "oson") === "ON";
-        this._nightMode = this.getFieldValue(newState, "nmod") === "ON";        
+        this._nightMode = this.getFieldValue(newState, "nmod") === "ON";
+        this._monitoringMode = this.getFieldValue(newState, "rhtm") === "ON";
         this._speed = (Number.parseInt(this.getFieldValue(newState, "fnsp"))||5) * 10;
         if (this.heatAvailable) {
             this._heat = this.getFieldValue(newState, "hmod") === "HEAT";
             this._focus = this.getFieldValue(newState, "ffoc") === "ON";
             this._heatThreshold = Number.parseFloat(this.getFieldValue(newState, "hmax")) /10 - 273;
-        } 
+        }
         if( this.is2018Dyson){
             this._focus = this.getFieldValue(newState, "fdir") === "ON";
         }
@@ -48,9 +49,10 @@ class DysonFanState {
         // }
         // With TP04 models average cflr and hflr
         let filterReading = this.getFieldValue(newState, "filf") ||
-            (this.getFieldValue(newState, "cflr") + this.getFieldValue(newState, "hflr"))/2;
-        // Assuming the max life is 12 * 365 = 4380 hrs
-        this._filterLife = Number.parseInt(filterReading) * 100 / 4380;
+            (Number.parseInt(this.getFieldValue(newState, "cflr")) + Number.parseInt(this.getFieldValue(newState, "hflr")))/2;
+
+        this._filterLife = Number.parseInt(filterReading);
+
         // Set to chang the filter when the life is below 10%
         this._filterChange = this._filterLife <10 ;
         // The value property of CurrentHeaterCoolerState must be one of the following:
@@ -72,14 +74,14 @@ class DysonFanState {
             this._targetHeaterCoolerState = 2;
         }
         if (this.heatAvailable && this._heat){
-            this._currentHeaterCoolerState = 2;            
+            this._currentHeaterCoolerState = 2;
             this._targetHeaterCoolerState = 1;
         }
         if(this._auto) {
             this._targetHeaterCoolerState = 0;
         }
     }
- 
+
     get fanOn() { return this._fan; }
     get fanAuto() {return this._auto;}
     get fanRotate() {return this._rotate;}
@@ -87,6 +89,7 @@ class DysonFanState {
     get fanHeat() {return this._heat;}
     get fanState() {return this._fanState;}
     get nightMode() {return this._nightMode;}
+    get monitoringMode() {return this._monitoringMode;}
     get fanFocused() {return this._focus;}
     get filterLife() {return this._filterLife;}
     get filterChangeRequired() {return this._filterChange;}
@@ -94,5 +97,5 @@ class DysonFanState {
     get targetHeaterCoolerState() { return this._targetHeaterCoolerState;}
     get heatThreshold() { return this._heatThreshold;}
 }
- 
+
 module.exports = { DysonFanState };
