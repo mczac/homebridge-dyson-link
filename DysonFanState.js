@@ -56,7 +56,7 @@ class DysonFanState {
         // Characteristic.CurrentHeaterCoolerState.COOLING = 3;
         switch(this.getFieldValue(newState, "fmod")||this.getFieldValue(newState, "fpwr")){
             case "OFF":
-                if (this._nightMode) this._currentHeaterCoolerState = 1
+                if (this._monitoringMode) this._currentHeaterCoolerState = 1
                   else this._currentHeaterCoolerState = 0
                 break;
             case "AUTO":
