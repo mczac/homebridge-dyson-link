@@ -60,21 +60,21 @@ class DysonLinkDevice {
             });
 
             this.mqttClient.on('message', (topic, message) => {
-                this.log.info(message.toString());
+                //this.log.info(message.toString());
                 let result = JSON.parse(message);
                 switch (result.msg) {
                     case "ENVIRONMENTAL-CURRENT-SENSOR-DATA":
-                        this.log.info("Update sensor data from ENVIRONMENTAL-CURRENT-SENSOR-DATA - " + this.displayName);
+                        //this.log.info("Update sensor data from ENVIRONMENTAL-CURRENT-SENSOR-DATA - " + this.displayName);
                         this.environment.updateState(result);
                         this.environmentEvent.emit(this.SENSOR_EVENT);
                         break;
                     case "CURRENT-STATE":
-                        this.log.info("Update fan data from CURRENT-STATE - " + this.displayName);
+                        //this.log.info("Update fan data from CURRENT-STATE - " + this.displayName);
                         this.fanState.updateState(result);
                         this.mqttEvent.emit(this.STATE_EVENT);
                         break;
                     case "STATE-CHANGE":
-                        this.log.info("STATE-CHANGE detected, request update - " + this.displayName);
+                        //this.log.info("STATE-CHANGE detected, request update - " + this.displayName);
                         this.requestForCurrentUpdate();
                         break;
                 }
@@ -192,16 +192,18 @@ class DysonLinkDevice {
     setFanState(value, callback) {
         switch (value) {
             case 0:
-                this.setState({ fmod: "OFF" });
+                this.setState({ fpwr: "OFF" });
                 break;
             case 1:
                 this.setState({ hmod: "HEAT" });
                 break;
             case 2:
-                this.setState({ fmod: "FAN" });
+                this.setState({ fpwr: "FAN" });
                 break;
             case 3:
-                this.setState({ fmod: "AUTO" });
+                this.setState({ auto: "AUTO" });
+                this.setState({ fnsp: "AUTO" });
+
                 break;
         }
 
@@ -417,7 +419,7 @@ class DysonLinkDevice {
                     this.setState({fpwr: value==1 ? "ON" : "OFF"})
                 }
                 else {
-                    this.setState({fmod: value == 1 ? "FAN" : "OFF"});
+                    this.setState({fnst: value == 1 ? "FAN" : "OFF"});
                 }
 
                 // Try to set the fan status according to the value in the home app

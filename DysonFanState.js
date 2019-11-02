@@ -18,12 +18,8 @@ class DysonFanState {
     }
 
     updateState(newState) {
-        this._fan = this.getFieldValue(newState, "fmod") === "FAN" ||
-                    this.getFieldValue(newState, "fmod") === "AUTO" ||
-                    this.getFieldValue(newState, "fpwr") === "ON" ;
-
-        this._auto = this.getFieldValue(newState, "fmod") === "AUTO" ||
-                    (this.getFieldValue(newState, "auto") === "ON" && this._fan);
+        this._fan = this.getFieldValue(newState, "fpwr") === "ON"
+        this._auto = (this.getFieldValue(newState, "auto") === "ON" && this._fan);
 
         this._rotate = this.getFieldValue(newState, "oson") === "ON";
         this._nightMode = this.getFieldValue(newState, "nmod") === "ON";
@@ -48,21 +44,20 @@ class DysonFanState {
         //     this._fanState = 1;
         // }
         // With TP04 models average cflr and hflr
-        let filterReading = this.getFieldValue(newState, "filf") ||
-            (Number.parseInt(this.getFieldValue(newState, "cflr")) + Number.parseInt(this.getFieldValue(newState, "hflr")))/2;
 
-        this._filterLife = Number.parseInt(filterReading);
+        this._filterLife = (Number.parseInt(this.getFieldValue(newState, "cflr")) + Number.parseInt(this.getFieldValue(newState, "hflr"))) / 2
 
         // Set to chang the filter when the life is below 10%
-        this._filterChange = this._filterLife <10 ;
+        this._filterChange = this._filterLife < 10
         // The value property of CurrentHeaterCoolerState must be one of the following:
         // Characteristic.CurrentHeaterCoolerState.INACTIVE = 0;
-        // Characteristic.CurrentHeaterCoolerState.IDLE = 1;
+        // Characteristic.CurrentHeaterCoolerState.IDLE = 1; -- monitoring
         // Characteristic.CurrentHeaterCoolerState.HEATING = 2;
         // Characteristic.CurrentHeaterCoolerState.COOLING = 3;
         switch(this.getFieldValue(newState, "fmod")||this.getFieldValue(newState, "fpwr")){
             case "OFF":
-                this._currentHeaterCoolerState = 0;
+                if (this._nightMode) this._currentHeaterCoolerState = 1
+                  else this._currentHeaterCoolerState = 0
                 break;
             case "AUTO":
             case "ON":
