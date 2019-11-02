@@ -159,6 +159,8 @@ class DysonLinkDevice {
     }
 
     getCurrentHeaterCoolerState(callback) {
+      this.log.info('YO coller heater state');
+
         if(this.mqttClient.connected){
             this.mqttEvent.once(this.STATE_EVENT, () => {
                 this.log.info(this.displayName + " - Heater Cooler State:" + this.fanState.heaterCoolerState);
